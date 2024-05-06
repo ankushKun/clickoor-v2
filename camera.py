@@ -28,8 +28,11 @@ os.environ["LIBCAMERA_LOG_LEVELS"] = "2"
 
 
 class CameraScreen(QWidget):
-    def __init__(self):
+
+    def __init__(self, name="", icon_path=""):
         super().__init__()
+        self.name = name
+        self.icon = QIcon(icon_path)
         self.camera = Picamera2()
         self.preview_config = self.camera.create_preview_configuration(
             main={"size": (1920, 1080)}

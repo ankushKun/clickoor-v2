@@ -19,7 +19,6 @@ from gallery import GalleryScreen
 class MainScreen(QWidget):
     def __init__(self):
         super().__init__()
-
         self.setWindowTitle("Clickoor")
         self.setFixedSize(640, 480)
         self.showFullScreen()
@@ -31,12 +30,32 @@ class MainScreen(QWidget):
         tabs.showFullScreen()
         tabs.setStyleSheet("background-color:black;font-size:11pt;")
 
-        # add screens here
-        tabs.addTab(CameraScreen(), QIcon("assets/shutter.png"), "Camera")
-        tabs.addTab(GalleryScreen(), QIcon("assets/gallery.png"), "Gallery")
-        tabs.addTab(WifiScreen(), QIcon("assets/wifi.png"), "Wifi")
-        tabs.addTab(WalletScreen(), QIcon("assets/wallet.png"), "AR Wallet")
-        tabs.addTab(SettingsScreen(), QIcon("assets/settings.png"), "Settings")
+        self.tabs_list = [
+            CameraScreen("Camera", "assets/shutter.png"),
+            GalleryScreen("Gallery", "assets/gallery.png"),
+            WifiScreen("Wifi", "assets/wifi.png"),
+            WalletScreen("AR Wallet", "assets/wallet.png"),
+            SettingsScreen("Settings", "assets/settings.png"),
+        ]
+
+        for tab in self.tabs_list:
+            tabs.addTab(tab, tab.icon, tab.name)
+
+        tabs.currentChanged.connect(self.tab_changed)
+
+    def tab_changed(self, i):
+        tab = self.tabs_list[i]
+        if tab.name == "Camera":
+            tab.camera.start()
+        else:
+            self.tabs_list[
+                0
+            ].camera.stop()  # make sure the first widget is always the camera one
+        if tab.name == "Gallery":
+            tab.active_screen = True
+            tab.goto_start()
+        else:
+            tab.active_screen = False
 
 
 if __name__ == "__main__":
