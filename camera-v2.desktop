@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Clickoor Camera V2
+Comment=Arweave India Clickoor Camera V2
+GenericName=Clickoor Camera V2
+Exec=bash /home/pi/clickoor-v2/start.sh
+Icon=org.xfce.camera
+Terminal=false
+StartupNotify=true
+Type=Application
+Categories=;
+MimeType=text/plain;

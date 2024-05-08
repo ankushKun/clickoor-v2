@@ -28,7 +28,7 @@ class MainScreen(QWidget):
         tabs.setFixedSize(640, 480)
         tabs.setIconSize(QSize(45, 45))
         tabs.showFullScreen()
-        tabs.setStyleSheet("background-color:black;font-size:11pt;")
+        tabs.setStyleSheet("background-color:black;font-size:13pt;")
 
         self.tabs_list = [
             CameraScreen("Camera", "assets/shutter.png"),
@@ -63,5 +63,4 @@ if __name__ == "__main__":
     qdarktheme.setup_theme()
     window = MainScreen()
     window.show()
-    # window.setStyleSheet("background-color:black;")
     app.exec()

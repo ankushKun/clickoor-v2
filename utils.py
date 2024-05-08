@@ -1,4 +1,7 @@
 import cv2
+import arweave
+from arweave.transaction_uploader import get_uploader
+import os, sys
 
 
 def make_alpha(path: str):
@@ -13,4 +16,39 @@ def make_alpha(path: str):
     cv2.imwrite("".join(f[:-1]) + ".mask.png", alpha_channel)
 
 
-make_alpha("assets/shutter.png")
+def is_json(filename):
+    return filename.endswith(".json") and len(filename.split(".")) == 2
+
+
+class AR:
+    def __init__(self) -> None:
+        self._jwk_path = "wallet.json"
+        self.wallet = None
+        self.tx = None
+        self.load_wallet()
+
+    def load_wallet(self):
+        if os.path.exists(self._jwk_path):
+            try:
+                self.wallet = arweave.Wallet(self._jwk_path)
+            except Exception as e:
+                print(e)
+                self.wallet = None
+
+    def upload_file(self, path: str):
+        if self.wallet:
+            self.file_handler = open(path, "rb", buffering=0)
+            tx = arweave.Transaction(
+                self.wallet, file_handler=self.file_handler, file_path=path
+            )
+            tx.add_tag("Content-Type", "image/png")
+            tx.add_tag("Type", "image")
+            tx.add_tag("App-Name", globals.state["app_name"])
+            tx.add_tag("App-Version", globals.get_version())
+            tx.sign()
+            self.tx = tx
+            self.uploader = get_uploader(self.tx, self.file_handler)
+            return self.uploader
+
+
+ar = AR()

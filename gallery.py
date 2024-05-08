@@ -123,7 +123,7 @@ class GalleryScreen(QWidget):
             self.indicator.setText("No Media")
 
     def media_status_changed(self, status):
-        # print(status)
+        print(status)
         if status == 7:  # playback complete
             self.mediaplayer.play()  # play again
 
