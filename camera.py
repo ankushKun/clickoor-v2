@@ -9,7 +9,9 @@ from picamera2.previews.qt import QGlPicamera2
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FfmpegOutput
-from libcamera import controls
+from libcamera import controls, Transform
+
+from gpiozero import Button
 
 from datetime import datetime
 from calendar import timegm
@@ -34,14 +36,18 @@ class CameraScreen(QWidget):
         self.name = name
         self.icon = QIcon(icon_path)
         self.camera = Picamera2()
+        self.shutter = Button(5, bounce_time=0.15)
+        self.shutter.when_pressed = self.shutter_clicked
         self.preview_config = self.camera.create_preview_configuration(
-            main={"size": (1920, 1080)}
+            main={"size": (1920, 1080)}, transform=Transform(vflip=True)
         )
         self.capture_config = self.camera.create_still_configuration(
-            main={"size": (1920, 1080)}, raw={"size": self.camera.sensor_resolution}
+            main={"size": (1920, 1080)},
+            raw={"size": self.camera.sensor_resolution},
+            transform=Transform(vflip=True),
         )
         self.video_config = self.camera.create_video_configuration(
-            main={"size": (1280, 720)}
+            main={"size": (1280, 720)}, transform=Transform(vflip=True)
         )
         self.camera.configure(self.preview_config)
         self.camera.set_controls(
