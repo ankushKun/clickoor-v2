@@ -39,15 +39,15 @@ class CameraScreen(QWidget):
         self.shutter = Button(5, bounce_time=0.15)
         self.shutter.when_pressed = self.shutter_clicked
         self.preview_config = self.camera.create_preview_configuration(
-            main={"size": (1920, 1080)}, transform=Transform(vflip=True)
+            main={"size": (1920, 1080)}, transform=Transform(vflip=True, hflip=True)
         )
         self.capture_config = self.camera.create_still_configuration(
             main={"size": (1920, 1080)},
             raw={"size": self.camera.sensor_resolution},
-            transform=Transform(vflip=True),
+            transform=Transform(vflip=True, hflip=True),
         )
         self.video_config = self.camera.create_video_configuration(
-            main={"size": (1280, 720)}, transform=Transform(vflip=True)
+            main={"size": (1280, 720)}, transform=Transform(vflip=True, hflip=True)
         )
         self.camera.configure(self.preview_config)
         self.camera.set_controls(
