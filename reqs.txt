@@ -3,3 +3,4 @@ sudo apt-get install python3-pyqt5.qtsvg
 sudo apt-get install libqt5multimedia5-plugins
 pip3 install pyqtdarktheme --break-system-packages
 pip3 install arweave-python-client --break-system-packages
+pip3 install gunicorn --break-system-packages

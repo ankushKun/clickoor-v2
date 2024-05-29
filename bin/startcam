@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+
+me=$(whoami)
+
+wayfire /usr/bin/bash /home/$me/clickoor-v2/start.sh

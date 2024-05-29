@@ -23,12 +23,14 @@ class MainScreen(QWidget):
         self.setFixedSize(640, 480)
         self.showFullScreen()
 
+        os.system("xrandr -o left")
+
         tabs = QTabWidget(self)
         tabs.setTabPosition(QTabWidget.TabPosition.North)
         tabs.setFixedSize(640, 480)
         tabs.setIconSize(QSize(45, 45))
         tabs.showFullScreen()
-        tabs.setStyleSheet("background-color:black;font-size:13pt;")
+        tabs.setStyleSheet("background-color:black;font-size:11pt;")
 
         self.tabs_list = [
             CameraScreen("Camera", "assets/shutter.png"),
@@ -48,14 +50,21 @@ class MainScreen(QWidget):
         if tab.name == "Camera":
             tab.camera.start()
         else:
-            self.tabs_list[
-                0
-            ].camera.stop()  # make sure the first widget is always the camera one
+            # make sure the first widget is always the camera one
+            self.tabs_list[0].camera.stop()
+
         if tab.name == "Gallery":
             tab.active_screen = True
             tab.goto_start()
         else:
-            tab.active_screen = False
+            # tab.active_screen = False
+            self.tabs_list[1].active_screen = False
+
+        if tab.name == "AR Wallet":
+            tab.load_wallet()
+            tab.start_server()
+        else:
+            self.tabs_list[3].stop_server()
 
 
 if __name__ == "__main__":

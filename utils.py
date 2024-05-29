@@ -1,7 +1,17 @@
+import subprocess
 import cv2
 import arweave
 from arweave.transaction_uploader import get_uploader
 import os, sys
+
+
+def run_cmd(cmd: str):
+    res = subprocess.run(cmd, shell=True, capture_output=True, timeout=0.1)
+    try:
+        res.check_returncode()
+        return res.stdout.decode("utf-8").strip()
+    except subprocess.CalledProcessError as e:
+        return e.stderr.decode("utf-8").strip()
 
 
 def make_alpha(path: str):
