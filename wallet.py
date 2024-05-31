@@ -30,15 +30,14 @@ def home():
     # else:
     #     w = None
     # print(w)
-    return "OK"
     # w = arweave.Wallet(wallet_path) if os.path.exists(wallet_path) else None
-    # return render_template(
-    #     "index.html",
-    #     data={
-    #         "address": w.address if w else "NO WALLET",
-    #         "balance": w.balance if w else "NO WALLET",
-    #     },
-    # )
+    status = "a wallet.json already exists, it will be replaced if a new one is uploaded" if os.path.exists("wallet.json") else "unable to locate wallet.json, please upload one"
+    return render_template(
+        "index.html",
+        data={
+            "status":status
+        },
+    )
 
 
 # @app.route('/gallery')
