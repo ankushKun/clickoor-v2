@@ -154,8 +154,9 @@ class WalletScreen(QWidget):
 
     def stop_server(self):
         try:
-            os.system("pkill gunicorn")
-            self.worker.terminate()
+            if self.worker:
+                os.system("pkill gunicorn")
+                self.worker.terminate()
         except Exception as e:
             print(e)
 

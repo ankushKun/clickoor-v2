@@ -44,17 +44,21 @@ class UploadWorker(QThread):
     def run(self):
         try:
             while not self.uploader.is_complete:
+                self.progress_bar.show()
                 self.uploader.upload_chunk()
                 self.progress_bar.setValue(int(self.uploader.pct_complete))
                 print(
                     f"{self.uploader.pct_complete}% - {self.uploader.uploaded_chunks}/{self.uploader.total_chunks}"
                 )
                 if self.uploader.uploaded_chunks == self.uploader.total_chunks:
+                    self.progress_bar.hide()
                     self.file_handler.close()
                     print("done")
+                    self.uploaded.emit(True)
                     break
         except Exception as e:
             print("upload exception", e)
+            self.uploaded.emit(True)
 
 class CameraScreen(QWidget):
 
@@ -142,7 +146,14 @@ class CameraScreen(QWidget):
         )
         # progress_bar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         progress_bar.showFullScreen()
+        progress_bar.hide()
         self.progress_bar = progress_bar
+
+        status_label = QLabel(self)
+        status_label.showFullScreen()
+        status_label.setText("...")
+        status_label.show()
+        self.status_label = status_label
 
         # address short
         address_short = QLabel(self)
@@ -166,6 +177,7 @@ class CameraScreen(QWidget):
 
         hlayout.addWidget(self.mode_btn)
         hlayout.addWidget(self.capture_btn)
+        hlayout.addWidget(self.status_label)
         hlayout.addWidget(self.progress_bar)
         hlayout.addWidget(self.address_short)
         hlayout.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -209,19 +221,26 @@ class CameraScreen(QWidget):
         self.camera.wait(job)
         self.preview_widget.setVisible(True)
         # uplaod to arweave
-        tx, uploader, file_handler = upload_file(self.last_filename, self.wallet)
-        # pass self.uploader to upload_worker
-        self.upload_worker = UploadWorker()
-        # self.upload_worker.uploaded.connect(self.uploaded)
-        self.upload_worker.uploader = uploader
-        self.upload_worker.file_handler = file_handler
-        self.upload_worker.progress_bar = self.progress_bar
-        self.upload_worker.start()
-        self.capture_btn.setEnabled(True)
+        if SettingsOptions.auto_upload_images and self.wallet:
+            self.upload_worker = UploadWorker()
+            self.tx, uploader, file_handler = upload_file(self.last_filename, self.wallet)
+            self.upload_worker.uploaded.connect(self.uploaded)
+            self.upload_worker.uploader = uploader
+            self.upload_worker.file_handler = file_handler
+            self.upload_worker.progress_bar = self.progress_bar
+            self.upload_worker.start()
+        else:
+            self.capture_btn.setEnabled(True)
         print("Captured")
 
-    def uploaded(self, status):
+    def uploaded(self,status):
         print("uploaded",status)
+        self.status_label.show()
+        if status:
+            self.status_label.setText(f"Uploaded {self.tx.id}")
+        else:
+            self.status_label.setText(f"Failed")
+
 
 
     def switch_mode(self):

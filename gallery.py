@@ -6,8 +6,11 @@ from PyQt5.QtGui import *
 from PyQt5.QtMultimediaWidgets import *
 from PyQt5.QtMultimedia import *
 
+from utils import upload_file
+
 
 btn_press_style = (
+"font-size: 16px;"
     "QPushButton"
     "{"
     "background-color : transparent;"
@@ -17,6 +20,37 @@ btn_press_style = (
     "background-color : gray;"
     "}"
 )
+
+
+class UploadWorker(QThread):
+    uploaded = pyqtSignal(bool)
+    uploader = None
+    file_handler = None
+    progress_bar = None
+
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        try:
+            while not self.uploader.is_complete:
+                self.progress_bar.show()
+                self.uploader.upload_chunk()
+                self.progress_bar.setValue(int(self.uploader.pct_complete))
+                print(
+                    f"{self.uploader.pct_complete}% - {self.uploader.uploaded_chunks}/{self.uploader.total_chunks}"
+                )
+                if self.uploader.uploaded_chunks == self.uploader.total_chunks:
+                    self.progress_bar.hide()
+                    self.file_handler.close()
+                    print("done")
+                    self.uploaded.emit(True)
+                    break
+        except Exception as e:
+            print("upload exception", e)
+            self.uploaded.emit(False)
+
+
 
 
 class GalleryScreen(QWidget):
@@ -62,6 +96,7 @@ class GalleryScreen(QWidget):
         self.upload_btn.setIconSize(QSize(40, 40))
         self.upload_btn.setStyleSheet(btn_press_style)
         self.upload_btn.setFlat(True)
+        self.upload_btn.clicked.connect(self.upload)
 
         self.delete_btn = QPushButton("", self)
         self.delete_btn.setFixedHeight(50)
@@ -70,6 +105,26 @@ class GalleryScreen(QWidget):
         self.delete_btn.setIconSize(QSize(40, 40))
         self.delete_btn.setStyleSheet(btn_press_style)
         self.delete_btn.setFlat(True)
+
+        status_label = QLabel("...", self)
+        status_label.setStyleSheet("background-color:black;")
+        self.status_label=status_label
+
+        # upload progress bar
+        progress_bar = QProgressBar(self)
+        # progress_bar.setFixedSize(150, 5)
+        progress_bar.setStyleSheet(
+            "QProgressBar {border: 2px solid grey; border-radius: 5px; background-color: white;}"
+            "QProgressBar::chunk {background-color: #05B8CC;}"
+        )
+        # progress_bar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        progress_bar.showFullScreen()
+        progress_bar.hide()
+        self.progress_bar = progress_bar
+
+
+
+
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self.indicator)
@@ -91,6 +146,32 @@ class GalleryScreen(QWidget):
         self.update_indicator()
         # if len(self.gallery_files()) > 0:
         #     self.show_media()
+
+    def upload(self):
+        if self.wallet:
+            self.upload_worker = UploadWorker()
+            self.tx, uploader, file_handler = upload_file(self.current_item_path(), self.wallet)
+            self.upload_worker.uploaded.connect(self.uploaded)
+            self.upload_worker.uploader = uploader
+            self.upload_worker.file_handler = file_handler
+            self.progress_bar.setValue(0)
+            self.upload_worker.progress_bar = self.progress_bar
+            self.upload_worker.start()
+        else:
+            print("no wallet found")
+
+    def uploaded(self,status):
+        print("uploaded",status)
+        self.status_label.show()
+        if status:
+            self.status_label.setText(f"Uploaded {self.tx.id}")
+        else:
+            self.status_label.setText(f"Failed")
+
+        # self.delete_current()
+
+
+
 
     def set_wallet(self, wallet):
         self.wallet = wallet

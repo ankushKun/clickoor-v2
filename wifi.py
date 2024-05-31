@@ -4,6 +4,18 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
+btn_press_style = (
+    "QPushButton"
+    "{"
+    "background-color : transparent;"
+    "font-size: 16px;"
+    "}"
+    "QPushButton::pressed"
+    "{"
+    "background-color : gray;"
+    "}"
+)
+
 
 def get_available_wifis():
     avl = []
@@ -135,7 +147,7 @@ class WifiScreen(QWidget):
                     # self.keyboard_container.layout().addWidget(spacer, i, j)
                     continue
                 key = QPushButton(keyboard[i][j], self.keyboard_container)
-                key.setStyleSheet("font-size:16px;")
+                key.setStyleSheet(btn_press_style)
                 self.keyboard_container.layout().addWidget(key, i, j)
                 key.setStyleSheet("background-color:black;font-weight:bold;")
                 key.setFixedSize(48, 48)
