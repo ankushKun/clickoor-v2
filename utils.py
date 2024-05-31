@@ -5,6 +5,8 @@ from arweave.transaction_uploader import get_uploader
 import os, sys
 import config
 
+from settings import SettingsOptions
+
 
 def run_cmd(cmd: str):
     res = subprocess.run(cmd, shell=True, capture_output=True, timeout=0.1)
@@ -34,6 +36,7 @@ def is_json(filename):
 
 def upload_file(path, wallet):
     if wallet:
+        SettingsOptions.load()
         file_handler = open(path, "rb", buffering=0)
 
         tx = arweave.Transaction(
@@ -43,6 +46,8 @@ def upload_file(path, wallet):
         tx.add_tag("Type", "image")
         tx.add_tag("App-Name", config.app_name)
         tx.add_tag("App-Version", config.app_version)
+        tx.add_tag("Commercial-Use", SettingsOptions.commercial_use)
+        tx.add_tag("Derivation", SettingsOptions.derivation)
         tx.sign()
         uploader = get_uploader(tx,file_handler)
 
