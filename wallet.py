@@ -90,21 +90,6 @@ def download():
 # app.run(host='0.0.0.0', port=8080)  # was getting no perms on port 80
 
 
-class WalletLoadWorker(QThread):
-    wallet_loaded = pyqtSignal(dict)
-
-    def __init__(self):
-        super().__init__()
-
-    def run(self):
-        try:
-            wallet = arweave.Wallet(wallet_path)
-            self.wallet_loaded.emit({"ok": True, "wallet": wallet})
-        except Exception as e:
-            print(e)
-            self.wallet_loaded.emit({"ok": False, "wallet": None})
-
-
 class ServerWorker(QThread):
     server_started = pyqtSignal(bool)
 
@@ -157,6 +142,10 @@ class WalletScreen(QWidget):
 
         self.setLayout(self.layout)
 
+    def set_wallet(self, wallet):
+        self.wallet = wallet
+        self.refresh_data()
+
     def start_server(self):
         self.worker = ServerWorker()
         self.worker.server_started.connect(self.server_started)
@@ -180,21 +169,7 @@ class WalletScreen(QWidget):
             self.portal_url.setText("Portal at [error]")
             self.portal_url_1.setText("[error]")
 
-    def load_wallet(self):
-        self.worker1 = WalletLoadWorker()
-        self.worker1.wallet_loaded.connect(self.wallet_loaded)
-        self.address.setText("Loading Wallet...")
-        self.worker1.start()
-
-    def wallet_loaded(self, d):
-        if d["ok"]:
-            self.wallet = d["wallet"]
-            # self.status.setText("Wallet Loaded")
-            self.refresh_data()
-        else:
-            self.address.setText("Failed to load wallet")
-
     def refresh_data(self):
         if self.wallet:
             self.address.setText(f"Address: {self.wallet.address}")
-            self.balance.setText(f"Balance: {self.wallet.balance}")
+            self.balance.setText(f"Balance: {self.wallet.balance} AR")

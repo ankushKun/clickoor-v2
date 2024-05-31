@@ -16,6 +16,9 @@ from gpiozero import Button
 from datetime import datetime
 from calendar import timegm
 
+from settings import SettingsOptions
+from utils import upload_file
+
 # Picamera log level
 # 0 - DEBUG
 # 1 - INFO
@@ -28,6 +31,30 @@ os.environ["LIBCAMERA_LOG_LEVELS"] = "2"
 # 1920,1080 = 1.777
 # 360
 
+class UploadWorker(QThread):
+    uploaded = pyqtSignal(bool)
+    pct_complete = pyqtSignal(int)
+    uploader = None
+    file_handler = None
+    progress_bar = None
+
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        try:
+            while not self.uploader.is_complete:
+                self.uploader.upload_chunk()
+                self.progress_bar.setValue(int(self.uploader.pct_complete))
+                print(
+                    f"{self.uploader.pct_complete}% - {self.uploader.uploaded_chunks}/{self.uploader.total_chunks}"
+                )
+                if self.uploader.uploaded_chunks == self.uploader.total_chunks:
+                    self.file_handler.close()
+                    print("done")
+                    break
+        except Exception as e:
+            print("upload exception", e)
 
 class CameraScreen(QWidget):
 
@@ -38,16 +65,22 @@ class CameraScreen(QWidget):
         self.camera = Picamera2()
         self.shutter = Button(5, bounce_time=0.15)
         self.shutter.when_pressed = self.shutter_clicked
+        self.wallet = None
+        vflip, hflip = (
+            (False, False)
+            if SettingsOptions.camera_orientation == "normal"
+            else (True, True)
+        )
         self.preview_config = self.camera.create_preview_configuration(
-            main={"size": (1920, 1080)}, transform=Transform(vflip=True, hflip=True)
+            main={"size": (1920, 1080)}, transform=Transform(vflip=vflip, hflip=hflip)
         )
         self.capture_config = self.camera.create_still_configuration(
             main={"size": (1920, 1080)},
             raw={"size": self.camera.sensor_resolution},
-            transform=Transform(vflip=True, hflip=True),
+            transform=Transform(vflip=vflip, hflip=hflip),
         )
         self.video_config = self.camera.create_video_configuration(
-            main={"size": (1280, 720)}, transform=Transform(vflip=True, hflip=True)
+            main={"size": (1280, 720)}, transform=Transform(vflip=vflip, hflip=hflip)
         )
         self.camera.configure(self.preview_config)
         self.camera.set_controls(
@@ -81,7 +114,7 @@ class CameraScreen(QWidget):
         mode_btn = QPushButton(self)
         mode_btn.setText("video")
         mode_btn.clicked.connect(self.switch_mode)
-        # mode_btn.setFixedSize(50, 50)
+        # mode_btn.setFixedSize(75, 50)
         mode_btn.setFixedHeight(50)
         mode_btn.showFullScreen()
         mode_btn.setIcon(QIcon("./assets/record_stopped.png"))
@@ -100,6 +133,26 @@ class CameraScreen(QWidget):
         capture_btn.setFlat(True)
         self.capture_btn = capture_btn
 
+        # upload progress bar
+        progress_bar = QProgressBar(self)
+        # progress_bar.setFixedSize(150, 5)
+        progress_bar.setStyleSheet(
+            "QProgressBar {border: 2px solid grey; border-radius: 5px; background-color: white;}"
+            "QProgressBar::chunk {background-color: #05B8CC;}"
+        )
+        # progress_bar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        progress_bar.showFullScreen()
+        self.progress_bar = progress_bar
+
+        # address short
+        address_short = QLabel(self)
+        address_short.setText("abcd...wxyz")
+        address_short.setFixedSize(150, 20)
+        # address_short.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        address_short.setStyleSheet("background-color:transparent")
+        address_short.showFullScreen()
+        self.address_short = address_short
+
         # settings_btn = QPushButton("Settings", self)
         # settings_btn.clicked.connect(self.open_settings)
         # settings_btn.setFixedSize(50, 50)
@@ -113,6 +166,8 @@ class CameraScreen(QWidget):
 
         hlayout.addWidget(self.mode_btn)
         hlayout.addWidget(self.capture_btn)
+        hlayout.addWidget(self.progress_bar)
+        hlayout.addWidget(self.address_short)
         hlayout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         # self.setStyleSheet("background-color:transparent")
 
@@ -125,6 +180,11 @@ class CameraScreen(QWidget):
 
         self.video_mode = False
         self.capturing_video = False
+
+    def set_wallet(self, wallet):
+        self.wallet = wallet
+        addr = wallet.address
+        self.address_short.setText(f"{addr[0:4]}...{addr[-4:]}")
 
     def shutter_clicked(self):
         if self.video_mode:
@@ -148,8 +208,21 @@ class CameraScreen(QWidget):
     def captured(self, job):
         self.camera.wait(job)
         self.preview_widget.setVisible(True)
+        # uplaod to arweave
+        tx, uploader, file_handler = upload_file(self.last_filename, self.wallet)
+        # pass self.uploader to upload_worker
+        self.upload_worker = UploadWorker()
+        # self.upload_worker.uploaded.connect(self.uploaded)
+        self.upload_worker.uploader = uploader
+        self.upload_worker.file_handler = file_handler
+        self.upload_worker.progress_bar = self.progress_bar
+        self.upload_worker.start()
         self.capture_btn.setEnabled(True)
         print("Captured")
+
+    def uploaded(self, status):
+        print("uploaded",status)
+
 
     def switch_mode(self):
         self.video_mode = not self.video_mode

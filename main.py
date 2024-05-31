@@ -15,15 +15,42 @@ from wallet import WalletScreen
 from wifi import WifiScreen
 from gallery import GalleryScreen
 
+from settings import SettingsOptions
+
+import arweave
+
+wallet_path = "wallet.json"
+
+
+class WalletLoadWorker(QThread):
+    wallet_loaded = pyqtSignal(dict)
+
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        try:
+            wallet = arweave.Wallet(wallet_path)
+            self.wallet_loaded.emit({"ok": True, "wallet": wallet})
+        except Exception as e:
+            print(e)
+            self.wallet_loaded.emit({"ok": False, "wallet": None})
+
 
 class MainScreen(QWidget):
     def __init__(self):
         super().__init__()
+        SettingsOptions.load()
         self.setWindowTitle("Clickoor")
         self.setFixedSize(640, 480)
         self.showFullScreen()
 
-        os.system("xrandr -o left")
+        if SettingsOptions.display_orientation == "flipped":
+            os.system("xrandr -o right")
+            os.system("wlr-randr --output DSI-1 --transform 270")
+        else:
+            os.system("xrandr -o left")
+            os.system("wlr-randr --output DSI-1 --transform 90")
 
         tabs = QTabWidget(self)
         tabs.setTabPosition(QTabWidget.TabPosition.North)
@@ -45,6 +72,8 @@ class MainScreen(QWidget):
 
         tabs.currentChanged.connect(self.tab_changed)
 
+        self.load_wallet()
+
     def tab_changed(self, i):
         tab = self.tabs_list[i]
         if tab.name == "Camera":
@@ -61,10 +90,25 @@ class MainScreen(QWidget):
             self.tabs_list[1].active_screen = False
 
         if tab.name == "AR Wallet":
-            tab.load_wallet()
             tab.start_server()
         else:
             self.tabs_list[3].stop_server()
+
+    def load_wallet(self):
+        self.wallet_load_worker = WalletLoadWorker()
+        self.wallet_load_worker.wallet_loaded.connect(self.wallet_loaded)
+        self.wallet_load_worker.start()
+
+    def wallet_loaded(self, d):
+        if d["ok"]:
+            self.wallet = d["wallet"]
+            # self.status.setText("Wallet Loaded")
+            self.tabs_list[0].set_wallet(self.wallet)  # camera
+            self.tabs_list[1].set_wallet(self.wallet)  # gallery
+            self.tabs_list[3].set_wallet(self.wallet)  # wallet
+        else:
+            self.wallet = None
+            # self.status.setText("Wallet Load Failed")
 
 
 if __name__ == "__main__":

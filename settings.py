@@ -12,6 +12,8 @@ class SettingsOptions:
     video_res = (1280, 720)
     auto_upload_images = True
     auto_upload_videos = False
+    display_orientation = "normal"
+    camera_orientation = "normal"
 
     def load():
         if os.path.exists(SettingsOptions.settings_path):
@@ -21,6 +23,8 @@ class SettingsOptions:
             SettingsOptions.video_res = s_local["video_res"]
             SettingsOptions.auto_upload_images = s_local["auto_upload_images"]
             SettingsOptions.auto_upload_videos = s_local["auto_upload_videos"]
+            SettingsOptions.display_orientation = s_local["display_orientation"]
+            SettingsOptions.camera_orientation = s_local["camera_orientation"]
         else:
             print(
                 f"{SettingsOptions.settings_path} not found, creating one with defaults"
@@ -34,9 +38,14 @@ class SettingsOptions:
             "video_res": SettingsOptions.video_res,
             "auto_upload_images": SettingsOptions.auto_upload_images,
             "auto_upload_videos": SettingsOptions.auto_upload_videos,
+            "display_orientation": SettingsOptions.display_orientation,
+            "camera_orientation": SettingsOptions.camera_orientation,
         }
         json.dump(s_new, open(SettingsOptions.settings_path, "w"))
 
+
+display_orientation_options = ["normal", "flipped"]
+camera_orientation_options = ["normal", "flipped"]
 
 image_res_options = {
     "720p": (1280, 720),
@@ -114,13 +123,83 @@ class SettingsScreen(QWidget):
         self.auto_upload_videos.setText("Auto Upload Videos")
         self.auto_upload_videos.stateChanged.connect(self.auto_upload_videos_changed)
 
+        # Camera orientation
+        cam_ori_container = QWidget(settings_container)
+        cam_ori_container.setFixedSize(640, 50)
+        cam_ori_container.setLayout(QHBoxLayout())
+        cam_ori_container.move(0,200)
+
+
+        cam_ori_label = QLabel("Camera orientation: ", cam_ori_container)
+        cam_ori_label.setFixedSize(200,50)
+        cam_ori_label.move(0,0)
+
+        self.cam_ori_combo = QComboBox(cam_ori_container)
+        self.cam_ori_combo.addItems(camera_orientation_options)
+        self.cam_ori_combo.setFixedSize(200,50)
+        self.cam_ori_combo.move(200,0)
+        self.cam_ori_combo.currentIndexChanged.connect(self.camera_orientation_changed)
+
+        # Camera orientation
+        dis_ori_container = QWidget(settings_container)
+        dis_ori_container.setFixedSize(640, 50)
+        dis_ori_container.setLayout(QHBoxLayout())
+        dis_ori_container.move(0,250)
+
+        dis_ori_label = QLabel("Display orientation: ", dis_ori_container)
+        dis_ori_label.setFixedSize(200,50)
+        dis_ori_label.move(0,0)
+
+        self.dis_ori_combo = QComboBox(dis_ori_container)
+        self.dis_ori_combo.addItems(display_orientation_options)
+        self.dis_ori_combo.setFixedSize(200,50)
+        self.dis_ori_combo.move(200,0)
+        self.dis_ori_combo.currentIndexChanged.connect(self.display_orientation_changed)
+
+
+        # restart button top right corner
+        restart_button = QPushButton(settings_container)
+        restart_button.setFixedSize(70, 50)
+        restart_button.move(570, 50)
+        restart_button.setText("Restart")
+        restart_button.clicked.connect(lambda: os.system("sudo reboot"))
+
         # put all of these in the center and one below another
         layout = QVBoxLayout()
         layout.addWidget(img_container)
         layout.addWidget(vid_container)
         layout.addWidget(self.auto_upload_images)
         layout.addWidget(self.auto_upload_videos)
+        layout.addWidget(cam_ori_container)
+        layout.addWidget(dis_ori_container)
+        layout.addWidget(restart_button)
         self.setLayout(layout)
+
+        # load saved settings
+        SettingsOptions.load()
+        # set the current values
+        self.img_res_combo.setCurrentIndex(
+            list(image_res_options.values()).index(tuple(SettingsOptions.image_res))
+        )
+        self.vid_res_combo.setCurrentIndex(
+            list(video_res_options.values()).index(tuple(SettingsOptions.video_res))
+        )
+        self.auto_upload_images.setChecked(SettingsOptions.auto_upload_images)
+        self.auto_upload_videos.setChecked(SettingsOptions.auto_upload_videos)
+        self.cam_ori_combo.setCurrentIndex(
+            camera_orientation_options.index(SettingsOptions.camera_orientation)
+        )
+        self.dis_ori_combo.setCurrentIndex(
+            display_orientation_options.index(SettingsOptions.display_orientation)
+        )
+
+    def display_orientation_changed(self):
+        SettingsOptions.display_orientation = self.dis_ori_combo.currentText()
+        SettingsOptions.save()
+
+    def camera_orientation_changed(self):
+        SettingsOptions.camera_orientation = self.cam_ori_combo.currentText()
+        SettingsOptions.save()
 
     def auto_upload_images_changed(self):
         SettingsOptions.auto_upload_images = self.auto_upload_images.isChecked()

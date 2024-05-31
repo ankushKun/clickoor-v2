@@ -35,6 +35,7 @@ class GalleryScreen(QWidget):
         self.mediaplayer.setVideoOutput(self.video)
         self.mediaplayer.mediaStatusChanged.connect(self.media_status_changed)
         self.active_screen = False
+        self.wallet = None
 
         self.indicator = QLabel(self)
         self.indicator.setFixedHeight(50)
@@ -90,6 +91,9 @@ class GalleryScreen(QWidget):
         self.update_indicator()
         # if len(self.gallery_files()) > 0:
         #     self.show_media()
+
+    def set_wallet(self, wallet):
+        self.wallet = wallet
 
     def gallery_files(self):
         f = os.listdir("captures")

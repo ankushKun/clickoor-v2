@@ -3,6 +3,7 @@ import cv2
 import arweave
 from arweave.transaction_uploader import get_uploader
 import os, sys
+import config
 
 
 def run_cmd(cmd: str):
@@ -30,35 +31,20 @@ def is_json(filename):
     return filename.endswith(".json") and len(filename.split(".")) == 2
 
 
-class AR:
-    def __init__(self) -> None:
-        self._jwk_path = "wallet.json"
-        self.wallet = None
-        self.tx = None
-        self.load_wallet()
 
-    def load_wallet(self):
-        if os.path.exists(self._jwk_path):
-            try:
-                self.wallet = arweave.Wallet(self._jwk_path)
-            except Exception as e:
-                print(e)
-                self.wallet = None
+def upload_file(path, wallet):
+    if wallet:
+        file_handler = open(path, "rb", buffering=0)
 
-    def upload_file(self, path: str):
-        if self.wallet:
-            self.file_handler = open(path, "rb", buffering=0)
-            tx = arweave.Transaction(
-                self.wallet, file_handler=self.file_handler, file_path=path
-            )
-            tx.add_tag("Content-Type", "image/png")
-            tx.add_tag("Type", "image")
-            tx.add_tag("App-Name", globals.state["app_name"])
-            tx.add_tag("App-Version", globals.get_version())
-            tx.sign()
-            self.tx = tx
-            self.uploader = get_uploader(self.tx, self.file_handler)
-            return self.uploader
+        tx = arweave.Transaction(
+            wallet, file_handler=file_handler, file_path=path
+        )
+        tx.add_tag("Content-Type", "image/png")
+        tx.add_tag("Type", "image")
+        tx.add_tag("App-Name", config.app_name)
+        tx.add_tag("App-Version", config.app_version)
+        tx.sign()
+        uploader = get_uploader(tx,file_handler)
 
+        return tx, uploader, file_handler
 
-ar = AR()

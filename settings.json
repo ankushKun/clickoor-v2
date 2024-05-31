@@ -1,1 +1,1 @@
-{"preview_res": [1920, 1080], "image_res": [1920, 1080], "video_res": [1280, 720], "auto_upload_images": true, "auto_upload_videos": false}
+{"preview_res": [1920, 1080], "image_res": [1920, 1080], "video_res": [1280, 720], "auto_upload_images": true, "auto_upload_videos": false, "display_orientation": "normal", "camera_orientation": "flipped"}

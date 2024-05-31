@@ -3,3 +3,4 @@ captures/*.png
 captures/*.jpg
 __pycache__
 .vscode
+wallet.json
