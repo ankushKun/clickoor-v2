@@ -1,5 +1,4 @@
 import subprocess
-import cv2
 import arweave
 from arweave.transaction_uploader import get_uploader
 import os, sys
@@ -15,18 +14,6 @@ def run_cmd(cmd: str):
         return res.stdout.decode("utf-8").strip()
     except subprocess.CalledProcessError as e:
         return e.stderr.decode("utf-8").strip()
-
-
-def make_alpha(path: str):
-    # Read the PNG image
-    img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
-
-    # Get the alpha channel
-    alpha_channel = img[:, :, 3]
-
-    # Save the alpha channel as a grayscale image
-    f = path.split(".")
-    cv2.imwrite("".join(f[:-1]) + ".mask.png", alpha_channel)
 
 
 def is_json(filename):
