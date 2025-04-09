@@ -87,12 +87,15 @@ class CameraScreen(QWidget):
             main={"size": (1280, 720)}, transform=Transform(vflip=vflip, hflip=hflip)
         )
         self.camera.configure(self.preview_config)
-        self.camera.set_controls(
-            {
-                "AfMode": controls.AfModeEnum.Continuous,
-                "AfSpeed": controls.AfSpeedEnum.Fast,
-            }
-        )
+        try:    
+            self.camera.set_controls(
+                {
+                    "AfMode": controls.AfModeEnum.Continuous,
+                    "AfSpeed": controls.AfSpeedEnum.Fast,
+                }
+            )
+        except Exception as e:
+            print("AF not available")
 
         preview_widget = QGlPicamera2(
             self.camera, self, keep_ar=True, width=640, height=360
